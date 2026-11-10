@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f5efe5">
+  <title>แชร์สูตรอาหาร — ค้นหาและแบ่งปันสูตรอาหาร</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="#"><span class="brand-icon">🍳</span><span>แชร์สูตรอาหาร<small>ค้นหา แบ่งปัน และสร้างสรรค์เมนูใหม่ ๆ</small></span></a>
+  <div class="account">
+    <span id="user-label" class="user-label"></span>
+    <button id="login-open" class="btn btn-light">เข้าสู่ระบบ</button>
+    <button id="logout" class="btn btn-light hidden">ออกจากระบบ</button>
+  </div>
+</header>
+<main class="container">
+  <section class="hero">
+    <div><p class="eyebrow">CREATIVE KITCHEN COMMUNITY</p><h1>สูตรเดิม เพิ่มเติมคือ<br><em>ความคิดสร้างสรรค์</em></h1>
+    <p>พื้นที่แบ่งปันเมนูดัดแปลง สูตรแปลกใหม่ และไอเดียอาหารที่ไม่เหมือนใคร</p>
+    <button id="post-open" class="btn btn-primary">＋ แชร์สูตรของคุณ</button></div>
+    <div class="hero-art" aria-hidden="true">🥘<span>✨</span></div>
+  </section>
+  <section class="toolbar">
+    <input id="search" type="search" placeholder="ค้นหาชื่อเมนูหรือวัตถุดิบ…">
+    <div class="tabs"><button class="tab active" data-sort="new">มาใหม่</button><button class="tab" data-sort="popular">ยอดนิยม</button></div>
+  </section>
+  <div id="notice" class="notice hidden"></div>
+  <section id="recipe-list" class="recipe-grid"><div class="empty">กำลังโหลดสูตรอาหาร…</div></section>
+</main>
+
+<dialog id="auth-dialog" class="modal">
+  <form method="dialog" class="modal-head"><div><p class="eyebrow">WELCOME</p><h2>เข้าร่วมครัวทดลอง</h2></div><button class="x" aria-label="ปิด">×</button></form>
+  <div class="auth-tabs"><button id="show-login" class="auth-tab active">เข้าสู่ระบบ</button><button id="show-signup" class="auth-tab">สมัครสมาชิก</button></div>
+  <form id="password-form" class="stack">
+    <label>ชื่อผู้ใช้<input id="auth-username" autocomplete="username" minlength="3" maxlength="24" required placeholder="เช่น cook123"></label>
+    <label>รหัสผ่าน<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร"></label>
+    <label id="confirm-wrap" class="hidden">ยืนยันรหัสผ่าน<input id="auth-confirm" type="password" autocomplete="new-password" minlength="8" placeholder="พิมพ์รหัสผ่านอีกครั้ง"></label>
+    <button id="password-submit" class="btn btn-primary full" type="submit">เข้าสู่ระบบ</button>
+  </form>
+  <div class="or"><span>หรือ</span></div>
+  <button id="google-login" class="btn btn-google full"><b class="google-g">G</b> ดำเนินการต่อด้วย Google</button>
+  <p class="hint">ชื่อผู้ใช้ต้องไม่ซ้ำกัน และรหัสผ่านอย่างน้อย 8 ตัวอักษร</p>
+  <p id="auth-message" class="form-message" role="status"></p>
+</dialog>
+
+<dialog id="post-dialog" class="modal wide">
+  <form method="dialog" class="modal-head"><div><p class="eyebrow">YOUR CREATION</p><h2>แบ่งปันสูตรใหม่</h2></div><button class="x" aria-label="ปิด">×</button></form>
+  <form id="recipe-form" class="stack">
+    <label>ชื่อเมนู<input id="recipe-title" maxlength="90" required placeholder="เช่น ข้าวผัดชาเขียว"></label>
+    <label>เมนูต้นแบบ / แรงบันดาลใจ<input id="recipe-original" maxlength="90" placeholder="ดัดแปลงมาจากเมนูอะไร"></label>
+    <label>แนวคิดความแปลกใหม่<textarea id="recipe-description" maxlength="500" rows="2" placeholder="เล่าว่าทำไมถึงคิดเมนูนี้ขึ้นมา"></textarea></label>
+    <label>วัตถุดิบ<textarea id="recipe-ingredients" rows="4" required placeholder="ใส่วัตถุดิบทีละบรรทัด"></textarea></label>
+    <label>วิธีทำ<textarea id="recipe-steps" rows="5" required placeholder="อธิบายขั้นตอนทีละข้อ"></textarea></label>
+    <label>รูปภาพเมนู (ได้ 1 รูป, ไม่เกิน 5 MB)<input id="recipe-image" type="file" accept="image/jpeg,image/png,image/webp" required></label>
+    <button id="recipe-submit" class="btn btn-primary full" type="submit">เผยแพร่สูตร</button>
+    <p id="recipe-message" class="form-message"></p>
+  </form>
+</dialog>
+<footer>ครัวทดลอง · แชร์ไอเดียอาหารอย่างสร้างสรรค์</footer>
+<script src="app.js"></script>
+</body>
+</html>
