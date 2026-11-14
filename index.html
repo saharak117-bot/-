@@ -2,94 +2,117 @@
 <html lang="th">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FANUC 21i-TB | CNC Training Simulator</title>
-<link rel="manifest" href="manifest.webmanifest">
-<meta name="theme-color" content="#101820">
+<meta name="theme-color" content="#101820"><title>FANUC Style CNC Learning Panel</title>
 <style>
-:root{--bg:#101820;--panel:#1b2833;--line:#344957;--green:#a8ff60;--amber:#ffca63;--red:#ff7474;--txt:#eaf2f7}
-*{box-sizing:border-box}body{margin:0;background:#0b1117;color:var(--txt);font:15px system-ui,sans-serif}
-header{padding:16px 18px;background:#17232d;border-bottom:2px solid #39505f}
-h1{font-size:20px;margin:0}header p{margin:5px 0 0;color:#aebec8;font-size:13px}
-main{max-width:1100px;margin:auto;padding:14px;display:grid;gap:12px;grid-template-columns:1.1fr .9fr}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
-h2{font-size:16px;margin:0 0 10px;color:var(--green)}
-.screen{background:#07110e;border:2px solid #526b5e;border-radius:6px;padding:12px;color:#a8ff9d;font-family:ui-monospace,monospace;min-height:190px}
-.row{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0}
-button,select{background:#263947;color:white;border:1px solid #587080;border-radius:6px;padding:10px 12px;font-weight:600}
-button:active{transform:translateY(1px)}button.primary{background:#426d2d;border-color:#8bd65b}
-button.warn{background:#694b21;border-color:#bd9349}
-textarea{width:100%;min-height:145px;background:#07110e;color:#a8ff9d;border:1px solid #526b5e;border-radius:6px;padding:10px;font:14px ui-monospace,monospace}
-canvas{width:100%;background:#08121a;border:1px solid #3b5362;border-radius:6px;display:block}
-.small{color:#b4c2cb;font-size:13px;line-height:1.55}.status{font-weight:700;color:var(--green)}.warning{color:var(--amber)}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.key{background:#253540;padding:9px;border-radius:6px;text-align:center;border:1px solid #405766}
-footer{max-width:1100px;margin:0 auto;padding:0 14px 22px;color:#9eacb6;font-size:12px}
-@media(max-width:760px){main{grid-template-columns:1fr}h1{font-size:18px}}
+*{box-sizing:border-box}body{margin:0;background:#0b1117;color:#e9f0f4;font:14px system-ui,sans-serif}
+header{background:#17232d;border-bottom:2px solid #587080;padding:13px 15px}
+h1{font-size:18px;margin:0}header p{margin:4px 0 0;color:#b8c6ce;font-size:12px}
+main{max-width:1100px;margin:auto;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.panel{background:#1b2833;border:1px solid #405767;border-radius:9px;padding:12px;min-width:0}
+h2{font-size:15px;color:#a8ff60;margin:0 0 9px}
+.screen{background:#06120d;border:2px solid #637b69;border-radius:5px;padding:10px;color:#a8ff9d;font:13px ui-monospace,monospace;min-height:105px;line-height:1.65}
+textarea{width:100%;height:210px;resize:vertical;background:#06120d;color:#b4ffab;border:1px solid #637b69;border-radius:5px;padding:10px;font:13px/1.6 ui-monospace,monospace}
+canvas{width:100%;height:auto;background:#071019;border:1px solid #405767;border-radius:6px;display:block}
+button{padding:9px 12px;border:1px solid #718794;border-radius:6px;background:#2c414f;color:#fff;font-weight:700}
+button.primary{background:#426d2d;border-color:#9bdc6a}button.stop{background:#70422c;border-color:#bc8061}
+.row{display:flex;gap:7px;flex-wrap:wrap;margin:9px 0}
+.note{color:#bdcbd3;font-size:12px;line-height:1.55}.good{color:#a8ff60}.bad{color:#ffbd77}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.key{background:#263947;text-align:center;padding:8px;border-radius:5px;border:1px solid #526977;font-weight:700}
+select{padding:8px;background:#263947;color:white;border:1px solid #607987;border-radius:5px}
+@media(max-width:760px){main{grid-template-columns:1fr}}
 </style></head>
 <body>
-<header><h1>FANUC 21i-TB — CNC LATHE TRAINING</h1><p>หน้าจอฝึกแนวคิดเครื่องกลึง • หน่วยเมตริก G21 • ใช้งานออฟไลน์ได้</p></header>
+<header><h1>FANUC-STYLE LATHE TRAINING PANEL</h1><p>โหมดเรียนรู้จำลอง • หน่วยเมตริก • ใช้งานออฟไลน์</p></header>
 <main>
 <section class="panel">
-<h2>หน้าจอควบคุมจำลอง</h2>
-<div class="screen" id="screen">
-<div>TRAINING MODE&nbsp;&nbsp;&nbsp; METRIC: mm</div><div>CONTROL: FANUC-STYLE (EDUCATIONAL)</div><hr style="border-color:#31503a">
-<div id="readout">สถานะ: พร้อมฝึก</div><div id="coords">X: ---.--- &nbsp; Z: ---.---</div>
-<div id="mode">โหมด: EDIT / SIMULATION</div><div id="message">เลือกแบบฝึกแล้วกดเริ่มจำลอง</div>
+<h2>หน้าจอควบคุม</h2>
+<div class="screen">
+<div>PROGRAM: DEMO-001 &nbsp; MODE: GRAPH</div>
+<div>UNIT: mm (แนวคิดเมตริก)</div><hr style="border-color:#385342">
+<div id="status">STATUS: READY</div>
+<div id="line">BLOCK: --</div>
+<div id="pos">X: -- &nbsp; Z: --</div>
+<div id="msg">รอเริ่มการฝึก</div>
 </div>
 <div class="row">
-<button class="primary" onclick="startSim()">เริ่มจำลอง</button>
-<button onclick="resetSim()">รีเซ็ต</button>
-<button class="warn" onclick="showLesson()">คำอธิบาย</button>
+<button class="primary" id="run">▶ RUN SIM</button><button id="pause">Ⅱ PAUSE</button><button class="stop" id="reset">RESET</button>
 </div>
-<div class="grid2">
-<div class="key">POS — ตำแหน่ง</div><div class="key">PROG — แบบฝึก</div>
-<div class="key">GRAPH — ภาพจำลอง</div><div class="key">ALARM — แจ้งเตือนฝึก</div>
+<div class="keypad">
+<div class="key">POS</div><div class="key">PROG</div><div class="key">GRAPH</div>
+<div class="key">OFFSET*</div><div class="key">ALARM</div><div class="key">SYSTEM*</div>
 </div>
-<p class="small">หน้าจอนี้เป็นเพียงหน้าตาจำลองเพื่อเรียนรู้ลำดับการทำงาน ไม่ได้เชื่อมต่อคอนโทรลเลอร์หรือเครื่องจักรจริง</p>
+<p class="note">ปุ่มเป็นภาพประกอบหน้าจอฝึก ไม่ได้ควบคุมเครื่องจักรหรือค่าชดเชยจริง</p>
 </section>
 <section class="panel">
-<h2>เลือกแบบฝึก</h2>
-<select id="lesson" onchange="loadLesson()" style="width:100%">
-<option value="turn">แนวคิดการกลึงปอก (ภาพประกอบ)</option>
-<option value="drill">แนวคิดการเจาะรู</option>
-<option value="bore">แนวคิดการคว้าน</option>
-<option value="thread">แนวคิดเกลียว</option>
-</select>
-<p class="small" id="lessonText">เรียนรู้ว่าการกลึงปอกเปลี่ยนเส้นผ่านศูนย์กลางของชิ้นงานอย่างไร</p>
-<h2 style="margin-top:16px">ลำดับคำสั่งฝึก (ไม่ใช่ G-code)</h2>
-<textarea id="program" spellcheck="false">TRAIN_START
-UNITS_MM
-SHOW_STOCK
-DEMO_TURN_PROFILE
-TRAIN_END</textarea>
-<div class="row"><button onclick="checkProgram()">ตรวจลำดับแบบฝึก</button><button onclick="restoreProgram()">คืนค่าเริ่มต้น</button></div>
-<div id="feedback" class="small">ใช้คำสั่งฝึกที่กำหนดไว้เท่านั้น ระบบนี้ไม่แปลหรือสร้างโปรแกรม CNC ที่นำไปใช้กับเครื่องจริงได้</div>
+<h2>เขียนคำสั่งฝึกด้วยตัวเอง</h2>
+<p class="note">ใช้ภาษาฝึกเฉพาะในโปรแกรมนี้ (SIM_...) ไม่ใช่ G-code/M-code ของเครื่องจริง</p>
+<textarea id="code" spellcheck="false">SIM_START
+SIM_STOCK 100
+SIM_TURN 70
+SIM_STEP 45
+SIM_END</textarea>
+<div class="row"><button id="check">ตรวจคำสั่ง</button><button id="sample">ตัวอย่างเริ่มต้น</button></div>
+<div id="result" class="note">แก้คำสั่งแล้วกดตรวจคำสั่งหรือ RUN SIM</div>
 </section>
 <section class="panel" style="grid-column:1/-1">
-<h2>ภาพชิ้นงานจำลอง</h2><canvas id="canvas" width="900" height="250"></canvas>
-<p class="small">ภาพเป็นแผนภาพเชิงการศึกษา ไม่คำนวณเส้นทางมีดจริง ไม่จำลองแรงตัด ระยะปลอดภัย หรือการชน</p>
+<h2>GRAPH — ภาพชิ้นงานหมุนและเปลี่ยนรูปทรง</h2>
+<canvas id="graph" width="1000" height="350"></canvas>
+<p class="note">ภาพนี้เป็นภาพจำลองเชิงการศึกษาแบบง่าย แสดงการหมุนเชิงสัญลักษณ์และรูปทรงตามคำสั่งฝึกเท่านั้น ไม่ได้คำนวณเส้นทางมีด ระยะปลอดภัย การชน ความเร็วตัด หรือสภาวะการตัดจริง</p>
+</section>
+<section class="panel" style="grid-column:1/-1">
+<h2>คำสั่งฝึกที่รองรับ</h2>
+<div class="note">
+<b>SIM_START</b> เริ่มโปรแกรมฝึก · <b>SIM_STOCK 100</b> กำหนดขนาดภาพชิ้นงาน ·
+<b>SIM_TURN 70</b> แสดงขนาดทรงกระบอกส่วนหนึ่ง · <b>SIM_STEP 45</b> แสดงทรงขั้น ·
+<b>SIM_END</b> จบโปรแกรมฝึก
+<br>ระบบนี้ไม่รองรับ G-code/M-code และไม่ส่งออกโปรแกรมสำหรับเครื่องจักร
+</div>
 </section>
 </main>
-<footer>ข้อควรทราบ: ซอฟต์แวร์ฝึกนี้ไม่ใช่ FANUC simulator อย่างเป็นทางการ และไม่ควรใช้ยืนยันความถูกต้องของโปรแกรมหรือการตั้งค่าเครื่องจักรจริง การใช้งานเครื่องจักรต้องอยู่ภายใต้การดูแลของครูฝึก/ผู้ควบคุมที่มีคุณสมบัติ</footer>
 <script>
-const lessons={
-turn:{text:"การกลึงปอก: สังเกตแนวคิดการลดขนาดเส้นผ่านศูนย์กลางของผิวภายนอก",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_TURN_PROFILE\nTRAIN_END",label:"แสดงชิ้นงานทรงขั้นบันได"},
-drill:{text:"การเจาะ: ทำความเข้าใจว่ารูเจาะอยู่ตามแนวแกนกลางของชิ้นงาน",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_CENTER_HOLE\nTRAIN_END",label:"แสดงรูตรงกลางชิ้นงาน"},
-bore:{text:"การคว้าน: เรียนรู้แนวคิดการขยาย/ปรับผิวด้านในของรูที่มีอยู่",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_INTERNAL_BORE\nTRAIN_END",label:"แสดงรูด้านในที่ขยายขึ้น"},
-thread:{text:"เกลียว: ทำความเข้าใจลักษณะผิวเป็นร่องวนรอบชิ้นงาน",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_THREAD_SURFACE\nTRAIN_END",label:"แสดงลายเกลียวเชิงสัญลักษณ์"}
-};
-let current="turn",running=false;
-function loadLesson(){current=document.getElementById('lesson').value;document.getElementById('lessonText').textContent=lessons[current].text;restoreProgram();draw(current)}
-function restoreProgram(){document.getElementById('program').value=lessons[current].cmd;document.getElementById('feedback').textContent="คืนค่าคำสั่งฝึกแล้ว"}
-function checkProgram(){let v=document.getElementById('program').value;let ok=v.includes("TRAIN_START")&&v.includes("UNITS_MM")&&v.includes("TRAIN_END")&&v.includes("DEMO_");document.getElementById('feedback').innerHTML=ok?'<span class="status">ลำดับแบบฝึกครบถ้วน</span>':'<span class="warning">ตรวจพบว่าลำดับแบบฝึกยังไม่ครบ ลองคืนค่าเริ่มต้น</span>'}
-function startSim(){running=true;document.getElementById('readout').textContent="สถานะ: กำลังแสดงภาพฝึก";document.getElementById('coords').textContent="X: แสดงเชิงสัญลักษณ์   Z: แสดงเชิงสัญลักษณ์";document.getElementById('mode').textContent="โหมด: GRAPH / TRAINING";document.getElementById('message').textContent=lessons[current].label;draw(current);checkProgram()}
-function resetSim(){running=false;document.getElementById('readout').textContent="สถานะ: พร้อมฝึก";document.getElementById('coords').textContent="X: ---.---   Z: ---.---";document.getElementById('mode').textContent="โหมด: EDIT / SIMULATION";document.getElementById('message').textContent="เลือกแบบฝึกแล้วกดเริ่มจำลอง";draw(current)}
-function showLesson(){alert(lessons[current].text+"\n\nนี่คือสื่อฝึกแนวคิด ไม่ใช่คู่มือเดินเครื่องจริง")}
-function draw(type){let c=document.getElementById('canvas'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle="#08121a";x.fillRect(0,0,c.width,c.height);x.strokeStyle="#425a68";x.lineWidth=2;x.beginPath();x.moveTo(65,125);x.lineTo(835,125);x.stroke();x.fillStyle="#9db1bd";x.fillRect(130,78,640,94);x.fillStyle="#d2dce2";x.fillRect(130,78,640,8);x.fillRect(130,164,640,8);
-if(type==="turn"){x.clearRect(390,78,190,94);x.fillStyle="#9db1bd";x.fillRect(390,100,190,50);x.fillStyle="#d2dce2";x.fillRect(390,100,190,6);x.fillRect(390,144,190,6)}
-if(type==="drill"||type==="bore"){x.fillStyle="#08121a";x.beginPath();x.ellipse(450,125,145,type==="drill"?18:31,0,0,Math.PI*2);x.fill();x.strokeStyle="#ffca63";x.stroke()}
-if(type==="thread"){x.strokeStyle="#ffca63";x.lineWidth=4;for(let i=0;i<18;i++){x.beginPath();x.moveTo(150+i*34,80);x.lineTo(170+i*34,170);x.stroke()}}
-x.fillStyle="#eaf2f7";x.font="16px system-ui";x.fillText("ภาพประกอบ: "+lessons[type].label,20,28)}
-loadLesson();
-if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js');
+const $=id=>document.getElementById(id), c=$('graph'),ctx=c.getContext('2d');
+let running=false, raf=0, angle=0, shape=0, lines=[], idx=0, last=0, stock=100, turn=70, step=45;
+function parse(){
+ const src=$('code').value.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ const allowed=/^(SIM_START|SIM_END|SIM_STOCK\s+\d+|SIM_TURN\s+\d+|SIM_STEP\s+\d+)$/;
+ const bad=src.findIndex(s=>!allowed.test(s));
+ if(bad>=0) return {ok:false,msg:`คำสั่งบรรทัด ${bad+1} ไม่อยู่ในชุดคำสั่งฝึก SIM_ ที่รองรับ`};
+ if(!src.includes('SIM_START')||!src.includes('SIM_END'))return {ok:false,msg:'ต้องมี SIM_START และ SIM_END'};
+ return {ok:true,lines:src};
+}
+function draw(){
+ ctx.clearRect(0,0,1000,350);ctx.fillStyle='#071019';ctx.fillRect(0,0,1000,350);
+ // spindle/chuck
+ ctx.fillStyle='#687780';ctx.fillRect(75,110,120,145);ctx.fillStyle='#aeb9bf';ctx.fillRect(180,145,45,75);
+ const left=220,right=825,cy=180, r= Math.max(32,Math.min(92,stock*.82)),r2=Math.max(25,Math.min(r,turn*.82)),rs=Math.max(20,Math.min(r2,step*.82));
+ const grad=ctx.createLinearGradient(0,cy-r,0,cy+r);grad.addColorStop(0,'#e1e7ea');grad.addColorStop(.25,'#77848c');grad.addColorStop(.5,'#202a31');grad.addColorStop(.78,'#909ca3');grad.addColorStop(1,'#d9e0e4');
+ ctx.fillStyle=grad;ctx.beginPath();ctx.moveTo(left,cy-r);ctx.lineTo(540,cy-r);ctx.lineTo(590,cy-r2);ctx.lineTo(right,cy-r2);ctx.lineTo(right,cy+r2);ctx.lineTo(590,cy+r2);ctx.lineTo(540,cy+r);ctx.lineTo(left,cy+r);ctx.closePath();ctx.fill();ctx.strokeStyle='#dbe4e9';ctx.lineWidth=2;ctx.stroke();
+ // rotation marks
+ ctx.save();ctx.beginPath();ctx.rect(left,cy-r-2,right-left,r*2+4);ctx.clip();
+ for(let i=0;i<22;i++){let xx=left+((i*43+angle*18)%610);ctx.strokeStyle=i%2?'rgba(255,255,255,.22)':'rgba(0,0,0,.25)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(xx,cy-r+5);ctx.lineTo(xx+9,cy+r-5);ctx.stroke()}
+ ctx.restore();
+ // symbolic tool
+ const tx=700-(idx/Math.max(1,lines.length))*260;
+ ctx.fillStyle='#6c91b3';ctx.beginPath();ctx.moveTo(tx-38,50);ctx.lineTo(tx+35,50);ctx.lineTo(tx+8,125);ctx.lineTo(tx-10,125);ctx.closePath();ctx.fill();ctx.strokeStyle='#c5d8e8';ctx.stroke();
+ ctx.fillStyle='#ffce69';ctx.beginPath();ctx.moveTo(tx-10,125);ctx.lineTo(tx+8,125);ctx.lineTo(tx,139);ctx.fill();
+ ctx.fillStyle='#edf4f7';ctx.font='18px system-ui';ctx.fillText('SPINDLE '+(running?'ROTATING':'STOPPED'),30,32);ctx.fillText('SIMULATION ONLY',790,325);
+ ctx.strokeStyle='#9db0bb';ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(30,cy);ctx.lineTo(930,cy);ctx.stroke();ctx.setLineDash([]);
+}
+function applyLine(s){
+ let m=s.match(/^SIM_STOCK\s+(\d+)/);if(m)stock=+m[1];
+ m=s.match(/^SIM_TURN\s+(\d+)/);if(m)turn=+m[1];
+ m=s.match(/^SIM_STEP\s+(\d+)/);if(m)step=+m[1];
+ $('line').textContent='BLOCK: '+(idx+1)+' / '+lines.length;
+ $('msg').textContent=s;
+ $('pos').textContent='X: '+(turn*2).toFixed(0)+' (ภาพ)  Z: '+(idx*10).toFixed(0)+' (ภาพ)';
+ draw();
+}
+function tick(t){if(!running)return;if(t-last>450){last=t;if(idx<lines.length){applyLine(lines[idx]);idx++}else{running=false;$('status').textContent='STATUS: END';$('msg').textContent='จบโปรแกรมฝึก';$('run').disabled=false;draw();return}}angle+=.12;draw();raf=requestAnimationFrame(tick)}
+function run(){let p=parse();if(!p.ok){$('result').innerHTML='<span class="bad">'+p.msg+'</span>';return}lines=p.lines;idx=0;stock=100;turn=70;step=45;running=true;$('status').textContent='STATUS: SIM RUN';$('result').innerHTML='<span class="good">ตรวจพบคำสั่งฝึกที่รองรับ เริ่มแสดงภาพ</span>';$('run').disabled=true;last=0;raf=requestAnimationFrame(tick)}
+$('run').onclick=run;
+$('pause').onclick=()=>{running=false;cancelAnimationFrame(raf);$('status').textContent='STATUS: PAUSED';$('run').disabled=false;draw()};
+$('reset').onclick=()=>{running=false;cancelAnimationFrame(raf);idx=0;stock=100;turn=70;step=45;$('status').textContent='STATUS: READY';$('line').textContent='BLOCK: --';$('pos').textContent='X: --  Z: --';$('msg').textContent='รอเริ่มการฝึก';$('run').disabled=false;draw()};
+$('check').onclick=()=>{let p=parse();$('result').innerHTML=p.ok?'<span class="good">คำสั่งฝึกครบและอยู่ในชุด SIM_ ที่รองรับ</span>':'<span class="bad">'+p.msg+'</span>'};
+$('sample').onclick=()=>{$('code').value='SIM_START\nSIM_STOCK 100\nSIM_TURN 70\nSIM_STEP 45\nSIM_END';$('result').textContent='คืนค่าตัวอย่างแล้ว'};
+draw();
 </script></body></html>
