@@ -1,66 +1,95 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#f5efe5">
-  <title>แชร์สูตรอาหาร — ค้นหาและแบ่งปันสูตรอาหาร</title>
-  <link rel="stylesheet" href="style.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-</head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>FANUC 21i-TB | CNC Training Simulator</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#101820">
+<style>
+:root{--bg:#101820;--panel:#1b2833;--line:#344957;--green:#a8ff60;--amber:#ffca63;--red:#ff7474;--txt:#eaf2f7}
+*{box-sizing:border-box}body{margin:0;background:#0b1117;color:var(--txt);font:15px system-ui,sans-serif}
+header{padding:16px 18px;background:#17232d;border-bottom:2px solid #39505f}
+h1{font-size:20px;margin:0}header p{margin:5px 0 0;color:#aebec8;font-size:13px}
+main{max-width:1100px;margin:auto;padding:14px;display:grid;gap:12px;grid-template-columns:1.1fr .9fr}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;min-width:0}
+h2{font-size:16px;margin:0 0 10px;color:var(--green)}
+.screen{background:#07110e;border:2px solid #526b5e;border-radius:6px;padding:12px;color:#a8ff9d;font-family:ui-monospace,monospace;min-height:190px}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin:9px 0}
+button,select{background:#263947;color:white;border:1px solid #587080;border-radius:6px;padding:10px 12px;font-weight:600}
+button:active{transform:translateY(1px)}button.primary{background:#426d2d;border-color:#8bd65b}
+button.warn{background:#694b21;border-color:#bd9349}
+textarea{width:100%;min-height:145px;background:#07110e;color:#a8ff9d;border:1px solid #526b5e;border-radius:6px;padding:10px;font:14px ui-monospace,monospace}
+canvas{width:100%;background:#08121a;border:1px solid #3b5362;border-radius:6px;display:block}
+.small{color:#b4c2cb;font-size:13px;line-height:1.55}.status{font-weight:700;color:var(--green)}.warning{color:var(--amber)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.key{background:#253540;padding:9px;border-radius:6px;text-align:center;border:1px solid #405766}
+footer{max-width:1100px;margin:0 auto;padding:0 14px 22px;color:#9eacb6;font-size:12px}
+@media(max-width:760px){main{grid-template-columns:1fr}h1{font-size:18px}}
+</style></head>
 <body>
-<header class="topbar">
-  <a class="brand" href="#"><span class="brand-icon">🍳</span><span>แชร์สูตรอาหาร<small>ค้นหา แบ่งปัน และสร้างสรรค์เมนูใหม่ ๆ</small></span></a>
-  <div class="account">
-    <span id="user-label" class="user-label"></span>
-    <button id="login-open" class="btn btn-light">เข้าสู่ระบบ</button>
-    <button id="logout" class="btn btn-light hidden">ออกจากระบบ</button>
-  </div>
-</header>
-<main class="container">
-  <section class="hero">
-    <div><p class="eyebrow">CREATIVE KITCHEN COMMUNITY</p><h1>สูตรเดิม เพิ่มเติมคือ<br><em>ความคิดสร้างสรรค์</em></h1>
-    <p>พื้นที่แบ่งปันเมนูดัดแปลง สูตรแปลกใหม่ และไอเดียอาหารที่ไม่เหมือนใคร</p>
-    <button id="post-open" class="btn btn-primary">＋ แชร์สูตรของคุณ</button></div>
-    <div class="hero-art" aria-hidden="true">🥘<span>✨</span></div>
-  </section>
-  <section class="toolbar">
-    <input id="search" type="search" placeholder="ค้นหาชื่อเมนูหรือวัตถุดิบ…">
-    <div class="tabs"><button class="tab active" data-sort="new">มาใหม่</button><button class="tab" data-sort="popular">ยอดนิยม</button></div>
-  </section>
-  <div id="notice" class="notice hidden"></div>
-  <section id="recipe-list" class="recipe-grid"><div class="empty">กำลังโหลดสูตรอาหาร…</div></section>
+<header><h1>FANUC 21i-TB — CNC LATHE TRAINING</h1><p>หน้าจอฝึกแนวคิดเครื่องกลึง • หน่วยเมตริก G21 • ใช้งานออฟไลน์ได้</p></header>
+<main>
+<section class="panel">
+<h2>หน้าจอควบคุมจำลอง</h2>
+<div class="screen" id="screen">
+<div>TRAINING MODE&nbsp;&nbsp;&nbsp; METRIC: mm</div><div>CONTROL: FANUC-STYLE (EDUCATIONAL)</div><hr style="border-color:#31503a">
+<div id="readout">สถานะ: พร้อมฝึก</div><div id="coords">X: ---.--- &nbsp; Z: ---.---</div>
+<div id="mode">โหมด: EDIT / SIMULATION</div><div id="message">เลือกแบบฝึกแล้วกดเริ่มจำลอง</div>
+</div>
+<div class="row">
+<button class="primary" onclick="startSim()">เริ่มจำลอง</button>
+<button onclick="resetSim()">รีเซ็ต</button>
+<button class="warn" onclick="showLesson()">คำอธิบาย</button>
+</div>
+<div class="grid2">
+<div class="key">POS — ตำแหน่ง</div><div class="key">PROG — แบบฝึก</div>
+<div class="key">GRAPH — ภาพจำลอง</div><div class="key">ALARM — แจ้งเตือนฝึก</div>
+</div>
+<p class="small">หน้าจอนี้เป็นเพียงหน้าตาจำลองเพื่อเรียนรู้ลำดับการทำงาน ไม่ได้เชื่อมต่อคอนโทรลเลอร์หรือเครื่องจักรจริง</p>
+</section>
+<section class="panel">
+<h2>เลือกแบบฝึก</h2>
+<select id="lesson" onchange="loadLesson()" style="width:100%">
+<option value="turn">แนวคิดการกลึงปอก (ภาพประกอบ)</option>
+<option value="drill">แนวคิดการเจาะรู</option>
+<option value="bore">แนวคิดการคว้าน</option>
+<option value="thread">แนวคิดเกลียว</option>
+</select>
+<p class="small" id="lessonText">เรียนรู้ว่าการกลึงปอกเปลี่ยนเส้นผ่านศูนย์กลางของชิ้นงานอย่างไร</p>
+<h2 style="margin-top:16px">ลำดับคำสั่งฝึก (ไม่ใช่ G-code)</h2>
+<textarea id="program" spellcheck="false">TRAIN_START
+UNITS_MM
+SHOW_STOCK
+DEMO_TURN_PROFILE
+TRAIN_END</textarea>
+<div class="row"><button onclick="checkProgram()">ตรวจลำดับแบบฝึก</button><button onclick="restoreProgram()">คืนค่าเริ่มต้น</button></div>
+<div id="feedback" class="small">ใช้คำสั่งฝึกที่กำหนดไว้เท่านั้น ระบบนี้ไม่แปลหรือสร้างโปรแกรม CNC ที่นำไปใช้กับเครื่องจริงได้</div>
+</section>
+<section class="panel" style="grid-column:1/-1">
+<h2>ภาพชิ้นงานจำลอง</h2><canvas id="canvas" width="900" height="250"></canvas>
+<p class="small">ภาพเป็นแผนภาพเชิงการศึกษา ไม่คำนวณเส้นทางมีดจริง ไม่จำลองแรงตัด ระยะปลอดภัย หรือการชน</p>
+</section>
 </main>
-
-<dialog id="auth-dialog" class="modal">
-  <form method="dialog" class="modal-head"><div><p class="eyebrow">WELCOME</p><h2>เข้าร่วมครัวทดลอง</h2></div><button class="x" aria-label="ปิด">×</button></form>
-  <div class="auth-tabs"><button id="show-login" class="auth-tab active">เข้าสู่ระบบ</button><button id="show-signup" class="auth-tab">สมัครสมาชิก</button></div>
-  <form id="password-form" class="stack">
-    <label>ชื่อผู้ใช้<input id="auth-username" autocomplete="username" minlength="3" maxlength="24" required placeholder="เช่น cook123"></label>
-    <label>รหัสผ่าน<input id="auth-password" type="password" autocomplete="current-password" minlength="8" required placeholder="อย่างน้อย 8 ตัวอักษร"></label>
-    <label id="confirm-wrap" class="hidden">ยืนยันรหัสผ่าน<input id="auth-confirm" type="password" autocomplete="new-password" minlength="8" placeholder="พิมพ์รหัสผ่านอีกครั้ง"></label>
-    <button id="password-submit" class="btn btn-primary full" type="submit">เข้าสู่ระบบ</button>
-  </form>
-  <div class="or"><span>หรือ</span></div>
-  <button id="google-login" class="btn btn-google full"><b class="google-g">G</b> ดำเนินการต่อด้วย Google</button>
-  <p class="hint">ชื่อผู้ใช้ต้องไม่ซ้ำกัน และรหัสผ่านอย่างน้อย 8 ตัวอักษร</p>
-  <p id="auth-message" class="form-message" role="status"></p>
-</dialog>
-
-<dialog id="post-dialog" class="modal wide">
-  <form method="dialog" class="modal-head"><div><p class="eyebrow">YOUR CREATION</p><h2>แบ่งปันสูตรใหม่</h2></div><button class="x" aria-label="ปิด">×</button></form>
-  <form id="recipe-form" class="stack">
-    <label>ชื่อเมนู<input id="recipe-title" maxlength="90" required placeholder="เช่น ข้าวผัดชาเขียว"></label>
-    <label>เมนูต้นแบบ / แรงบันดาลใจ<input id="recipe-original" maxlength="90" placeholder="ดัดแปลงมาจากเมนูอะไร"></label>
-    <label>แนวคิดความแปลกใหม่<textarea id="recipe-description" maxlength="500" rows="2" placeholder="เล่าว่าทำไมถึงคิดเมนูนี้ขึ้นมา"></textarea></label>
-    <label>วัตถุดิบ<textarea id="recipe-ingredients" rows="4" required placeholder="ใส่วัตถุดิบทีละบรรทัด"></textarea></label>
-    <label>วิธีทำ<textarea id="recipe-steps" rows="5" required placeholder="อธิบายขั้นตอนทีละข้อ"></textarea></label>
-    <label>รูปภาพเมนู (ได้ 1 รูป, ไม่เกิน 5 MB)<input id="recipe-image" type="file" accept="image/jpeg,image/png,image/webp" required></label>
-    <button id="recipe-submit" class="btn btn-primary full" type="submit">เผยแพร่สูตร</button>
-    <p id="recipe-message" class="form-message"></p>
-  </form>
-</dialog>
-<footer>ครัวทดลอง · แชร์ไอเดียอาหารอย่างสร้างสรรค์</footer>
-<script src="app.js"></script>
-</body>
-</html>
+<footer>ข้อควรทราบ: ซอฟต์แวร์ฝึกนี้ไม่ใช่ FANUC simulator อย่างเป็นทางการ และไม่ควรใช้ยืนยันความถูกต้องของโปรแกรมหรือการตั้งค่าเครื่องจักรจริง การใช้งานเครื่องจักรต้องอยู่ภายใต้การดูแลของครูฝึก/ผู้ควบคุมที่มีคุณสมบัติ</footer>
+<script>
+const lessons={
+turn:{text:"การกลึงปอก: สังเกตแนวคิดการลดขนาดเส้นผ่านศูนย์กลางของผิวภายนอก",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_TURN_PROFILE\nTRAIN_END",label:"แสดงชิ้นงานทรงขั้นบันได"},
+drill:{text:"การเจาะ: ทำความเข้าใจว่ารูเจาะอยู่ตามแนวแกนกลางของชิ้นงาน",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_CENTER_HOLE\nTRAIN_END",label:"แสดงรูตรงกลางชิ้นงาน"},
+bore:{text:"การคว้าน: เรียนรู้แนวคิดการขยาย/ปรับผิวด้านในของรูที่มีอยู่",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_INTERNAL_BORE\nTRAIN_END",label:"แสดงรูด้านในที่ขยายขึ้น"},
+thread:{text:"เกลียว: ทำความเข้าใจลักษณะผิวเป็นร่องวนรอบชิ้นงาน",cmd:"TRAIN_START\nUNITS_MM\nSHOW_STOCK\nDEMO_THREAD_SURFACE\nTRAIN_END",label:"แสดงลายเกลียวเชิงสัญลักษณ์"}
+};
+let current="turn",running=false;
+function loadLesson(){current=document.getElementById('lesson').value;document.getElementById('lessonText').textContent=lessons[current].text;restoreProgram();draw(current)}
+function restoreProgram(){document.getElementById('program').value=lessons[current].cmd;document.getElementById('feedback').textContent="คืนค่าคำสั่งฝึกแล้ว"}
+function checkProgram(){let v=document.getElementById('program').value;let ok=v.includes("TRAIN_START")&&v.includes("UNITS_MM")&&v.includes("TRAIN_END")&&v.includes("DEMO_");document.getElementById('feedback').innerHTML=ok?'<span class="status">ลำดับแบบฝึกครบถ้วน</span>':'<span class="warning">ตรวจพบว่าลำดับแบบฝึกยังไม่ครบ ลองคืนค่าเริ่มต้น</span>'}
+function startSim(){running=true;document.getElementById('readout').textContent="สถานะ: กำลังแสดงภาพฝึก";document.getElementById('coords').textContent="X: แสดงเชิงสัญลักษณ์   Z: แสดงเชิงสัญลักษณ์";document.getElementById('mode').textContent="โหมด: GRAPH / TRAINING";document.getElementById('message').textContent=lessons[current].label;draw(current);checkProgram()}
+function resetSim(){running=false;document.getElementById('readout').textContent="สถานะ: พร้อมฝึก";document.getElementById('coords').textContent="X: ---.---   Z: ---.---";document.getElementById('mode').textContent="โหมด: EDIT / SIMULATION";document.getElementById('message').textContent="เลือกแบบฝึกแล้วกดเริ่มจำลอง";draw(current)}
+function showLesson(){alert(lessons[current].text+"\n\nนี่คือสื่อฝึกแนวคิด ไม่ใช่คู่มือเดินเครื่องจริง")}
+function draw(type){let c=document.getElementById('canvas'),x=c.getContext('2d');x.clearRect(0,0,c.width,c.height);x.fillStyle="#08121a";x.fillRect(0,0,c.width,c.height);x.strokeStyle="#425a68";x.lineWidth=2;x.beginPath();x.moveTo(65,125);x.lineTo(835,125);x.stroke();x.fillStyle="#9db1bd";x.fillRect(130,78,640,94);x.fillStyle="#d2dce2";x.fillRect(130,78,640,8);x.fillRect(130,164,640,8);
+if(type==="turn"){x.clearRect(390,78,190,94);x.fillStyle="#9db1bd";x.fillRect(390,100,190,50);x.fillStyle="#d2dce2";x.fillRect(390,100,190,6);x.fillRect(390,144,190,6)}
+if(type==="drill"||type==="bore"){x.fillStyle="#08121a";x.beginPath();x.ellipse(450,125,145,type==="drill"?18:31,0,0,Math.PI*2);x.fill();x.strokeStyle="#ffca63";x.stroke()}
+if(type==="thread"){x.strokeStyle="#ffca63";x.lineWidth=4;for(let i=0;i<18;i++){x.beginPath();x.moveTo(150+i*34,80);x.lineTo(170+i*34,170);x.stroke()}}
+x.fillStyle="#eaf2f7";x.font="16px system-ui";x.fillText("ภาพประกอบ: "+lessons[type].label,20,28)}
+loadLesson();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js');
+</script></body></html>
