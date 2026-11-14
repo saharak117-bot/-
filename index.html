@@ -2,7 +2,7 @@
 <html lang="th">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101820"><title>FANUC Style CNC Learning Panel</title>
+<meta name="theme-color" content="#101820"><link rel="manifest" href="manifest.webmanifest"><title>FANUC Style CNC Learning Panel</title>
 <style>
 *{box-sizing:border-box}body{margin:0;background:#0b1117;color:#e9f0f4;font:14px system-ui,sans-serif}
 header{background:#17232d;border-bottom:2px solid #587080;padding:13px 15px}
@@ -115,4 +115,5 @@ $('reset').onclick=()=>{running=false;cancelAnimationFrame(raf);idx=0;stock=100;
 $('check').onclick=()=>{let p=parse();$('result').innerHTML=p.ok?'<span class="good">คำสั่งฝึกครบและอยู่ในชุด SIM_ ที่รองรับ</span>':'<span class="bad">'+p.msg+'</span>'};
 $('sample').onclick=()=>{$('code').value='SIM_START\nSIM_STOCK 100\nSIM_TURN 70\nSIM_STEP 45\nSIM_END';$('result').textContent='คืนค่าตัวอย่างแล้ว'};
 draw();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js');
 </script></body></html>
