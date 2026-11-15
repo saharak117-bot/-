@@ -1,72 +1,97 @@
-// 1) ใส่ Project URL และ anon/publishable key จาก Supabase ในสองบรรทัดนี้
-const SUPABASE_URL = "ใส่_SUPABASE_PROJECT_URL";
-const SUPABASE_ANON_KEY = "ใส่_SUPABASE_ANON_KEY";
-
-const $ = (id) => document.getElementById(id);
-const ready = SUPABASE_URL.startsWith("https://") && !SUPABASE_ANON_KEY.startsWith("ใส่_");
-const db = ready ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-let currentUser = null, sortMode = "new", recipes = [], signupMode = false;
-
-function message(id, text, good=false){ const el=$(id); el.textContent=text; el.style.color=good?"#426b3b":"#b44d2b"; }
-function usernameEmail(name){ return `${name.trim().toLowerCase()}@username.krua.invalid`; }
-function safeUsername(name){ return /^[a-zA-Z0-9_]{3,24}$/.test(name); }
-function requireConfig(){ if(!db){ alert("ยังไม่ได้เชื่อม Supabase กรุณาทำตาม README_TH.txt ก่อน"); return false;} return true; }
-function showAuth(mode="login"){ signupMode=mode==="signup"; $("show-login").classList.toggle("active",!signupMode); $("show-signup").classList.toggle("active",signupMode); $("confirm-wrap").classList.toggle("hidden",!signupMode); $("password-submit").textContent=signupMode?"สมัครสมาชิก":"เข้าสู่ระบบ"; $("auth-password").autocomplete=signupMode?"new-password":"current-password"; $("auth-message").textContent=""; $("auth-dialog").showModal(); }
-function updateAccount(){ $("login-open").classList.toggle("hidden",!!currentUser); $("logout").classList.toggle("hidden",!currentUser); $("user-label").textContent=currentUser?`สวัสดี ${currentUser.user_metadata?.username || currentUser.user_metadata?.full_name || "สมาชิก"}`:""; }
-async function loadRecipes(){
-  if(!db){ $("recipe-list").innerHTML='<div class="empty">เชื่อมต่อ Supabase ก่อน จึงจะแสดงสูตรอาหารจากสมาชิกได้</div>'; return; }
-  const {data,error}=await db.from("recipes").select("id,title,original_dish,description,image_url,created_at,user_id,likes(count),profiles(username)").order("created_at",{ascending:false}).limit(60);
-  if(error){ $("recipe-list").innerHTML='<div class="empty">โหลดสูตรไม่สำเร็จ ตรวจสอบการตั้งค่าฐานข้อมูลใน README</div>'; console.error(error); return; }
-  recipes=data||[]; renderRecipes();
+const canvas=document.getElementById('view'),ctx=canvas.getContext('2d');
+const $=id=>document.getElementById(id);
+let commands=[],index=0,playing=false,last=0,acc=0,x=40,z=0,tool={x:40,z:0},speed=5;
+let profile=[{z:0,r:20},{z:-60,r:20}],rot=0;
+const scale=6.1, cx=500, cy=230;
+function parse(){
+  const lines=$('program').value.split(/\r?\n/); const out=[];
+  for(let n=0;n<lines.length;n++){
+    let s=lines[n].trim().toUpperCase(); if(!s||s.startsWith(';'))continue;
+    if(s==='HOME'){out.push({type:'HOME',line:n+1});continue}
+    let m=s.match(/^(MOVE|CUT)\s+X\s*=\s*(-?\d+(?:\.\d+)?)\s+Z\s*=\s*(-?\d+(?:\.\d+)?)$/);
+    if(!m)throw new Error(`บรรทัด ${n+1}: รูปแบบไม่ถูกต้อง — ใช้ MOVE/CUT X=ตัวเลข Z=ตัวเลข`);
+    let X=Number(m[2]),Z=Number(m[3]);
+    if(!Number.isFinite(X)||!Number.isFinite(Z)||X<0||X>80||Z>10||Z< -100)throw new Error(`บรรทัด ${n+1}: ค่าต้องอยู่ในช่วง X 0–80 และ Z -100 ถึง 10`);
+    out.push({type:m[1],x:X,z:Z,line:n+1});
+  }
+  return out;
 }
-function renderRecipes(){
-  const q=$("search").value.trim().toLowerCase();
-  let list=recipes.filter(r=>[r.title,r.original_dish,r.description].join(" ").toLowerCase().includes(q));
-  if(sortMode==="popular") list.sort((a,b)=>(b.likes?.[0]?.count||0)-(a.likes?.[0]?.count||0));
-  if(!list.length){ $("recipe-list").innerHTML='<div class="empty">ยังไม่พบสูตรที่ค้นหา ลองค้นคำอื่นดูนะ</div>'; return; }
-  $("recipe-list").innerHTML=list.map(r=>`<article class="recipe-card"><img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.title)}" loading="lazy"><div class="recipe-body"><h3>${escapeHtml(r.title)}</h3><p>${escapeHtml(r.description||r.original_dish||"สูตรสร้างสรรค์จากสมาชิกครัวทดลอง")}</p><div class="recipe-meta"><span>โดย ${escapeHtml(r.profiles?.username||"สมาชิก")}</span><button class="like" data-like="${r.id}">♥ ${r.likes?.[0]?.count||0}</button></div></div></article>`).join("");
-  document.querySelectorAll("[data-like]").forEach(b=>b.addEventListener("click",()=>likeRecipe(b.dataset.like)));
+function reset(){
+  playing=false;index=0;x=40;z=0;tool={x:40,z:0};profile=[{z:0,r:20},{z:-60,r:20}];rot=0;
+  $('status').textContent='พร้อมฝึก';$('message').textContent='รีเซ็ตแล้ว พร้อมเริ่มใหม่';updateRead();draw();
 }
-function escapeHtml(s=""){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
-async function likeRecipe(id){ if(!currentUser){showAuth();return;} const {error}=await db.from("likes").insert({recipe_id:id,user_id:currentUser.id}); if(error && error.code!=="23505") alert("กดถูกใจไม่สำเร็จ"); await loadRecipes(); }
-async function syncSession(){ if(!db)return; const {data}=await db.auth.getSession(); currentUser=data.session?.user||null; updateAccount(); }
-$("login-open").onclick=()=>showAuth(); $("show-login").onclick=()=>showAuth("login"); $("show-signup").onclick=()=>showAuth("signup");
-$("logout").onclick=async()=>{await db.auth.signOut();currentUser=null;updateAccount();loadRecipes();};
-$("password-form").addEventListener("submit",async e=>{
- e.preventDefault(); if(!requireConfig())return;
- const username=$("auth-username").value.trim(), password=$("auth-password").value;
- if(!safeUsername(username)){message("auth-message","ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ จำนวน 3–24 ตัว");return;}
- if(signupMode){
-  if(password.length<8){message("auth-message","รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร");return;}
-  if(password!==$("auth-confirm").value){message("auth-message","รหัสผ่านที่ยืนยันไม่ตรงกัน");return;}
-  const {data,error}=await db.auth.signUp({email:usernameEmail(username),password,options:{data:{username}}});
-  if(error){message("auth-message",error.message);return;}
-  if(data.session){currentUser=data.user;updateAccount();$("auth-dialog").close();loadRecipes();}
-  else message("auth-message","สมัครแล้ว หากระบบแจ้งให้ยืนยันอีเมล แสดงว่ายังไม่ได้ปิด Email Confirm ใน Supabase",true);
- }else{
-  const {data,error}=await db.auth.signInWithPassword({email:usernameEmail(username),password});
-  if(error){message("auth-message","เข้าสู่ระบบไม่สำเร็จ ตรวจชื่อผู้ใช้และรหัสผ่าน");return;}
-  currentUser=data.user;updateAccount();$("auth-dialog").close();loadRecipes();
- }
-});
-$("google-login").onclick=async()=>{if(!requireConfig())return;const {error}=await db.auth.signInWithOAuth({provider:"google",options:{redirectTo:location.origin+location.pathname}});if(error)message("auth-message",error.message);};
-$("post-open").onclick=()=>{if(!currentUser){showAuth();message("auth-message","เข้าสู่ระบบก่อนจึงจะแชร์สูตรได้");return;} $("post-dialog").showModal();};
-$("recipe-form").addEventListener("submit",async e=>{
- e.preventDefault();if(!requireConfig()||!currentUser)return;
- const file=$("recipe-image").files[0];if(!file){message("recipe-message","กรุณาเลือกรูปภาพ 1 รูป");return;}
- if(file.size>5*1024*1024){message("recipe-message","รูปภาพต้องมีขนาดไม่เกิน 5 MB");return;}
- if(!["image/jpeg","image/png","image/webp"].includes(file.type)){message("recipe-message","รองรับไฟล์ JPG, PNG หรือ WEBP เท่านั้น");return;}
- $("recipe-submit").disabled=true;message("recipe-message","กำลังอัปโหลด…",true);
- const ext=file.name.split(".").pop().toLowerCase(), path=`${currentUser.id}/${crypto.randomUUID()}.${ext}`;
- const up=await db.storage.from("recipe-images").upload(path,file,{contentType:file.type,upsert:false});
- if(up.error){message("recipe-message","อัปโหลดรูปไม่สำเร็จ: "+up.error.message);$("recipe-submit").disabled=false;return;}
- const {data:{publicUrl}}=db.storage.from("recipe-images").getPublicUrl(path);
- const {error}=await db.from("recipes").insert({user_id:currentUser.id,title:$("recipe-title").value.trim(),original_dish:$("recipe-original").value.trim(),description:$("recipe-description").value.trim(),ingredients:$("recipe-ingredients").value.trim(),steps:$("recipe-steps").value.trim(),image_url:publicUrl,image_path:path});
- $("recipe-submit").disabled=false;
- if(error){message("recipe-message","บันทึกสูตรไม่สำเร็จ: "+error.message);return;}
- $("recipe-form").reset();$("post-dialog").close();await loadRecipes();$("notice").textContent="เผยแพร่สูตรของคุณแล้ว!";$("notice").classList.remove("hidden");
-});
-$("search").addEventListener("input",renderRecipes);
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{sortMode=t.dataset.sort;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));renderRecipes();});
-if(db){db.auth.onAuthStateChange((_event,session)=>{currentUser=session?.user||null;updateAccount();});}
-(async()=>{if(ready){await syncSession();await loadRecipes();}else loadRecipes();})();
+function updateRead(){$('xread').textContent=x.toFixed(1);$('zread').textContent=z.toFixed(1);$('lineNo').textContent=`${index} / ${commands.length}`;}
+function interpolateCut(nx,nz){
+  // Visual-only stock silhouette: reduce the radius over the traversed Z interval.
+  const r=Math.max(2,Math.min(20,nx/2));
+  const lo=Math.min(z,nz),hi=Math.max(z,nz);
+  let next=[];
+  for(const p of profile){if(p.z<lo||p.z>hi)next.push(p)}
+  next.push({z:lo,r},{z:hi,r}); next.sort((a,b)=>b.z-a.z);
+  const compact=[];for(const p of next){if(!compact.length||Math.abs(compact[compact.length-1].z-p.z)>.01)compact.push(p);else compact[compact.length-1].r=Math.min(compact[compact.length-1].r,p.r)}
+  profile=compact;
+}
+function execute(c){
+  if(c.type==='HOME'){x=40;z=0;tool={x,z};return}
+  if(c.type==='CUT')interpolateCut(c.x,c.z);
+  x=c.x;z=c.z;tool={x,z};
+}
+function next(){
+  if(index>=commands.length){playing=false;$('status').textContent='จบโปรแกรม';$('message').textContent='จำลองครบทุกคำสั่งแล้ว';return}
+  const c=commands[index++];execute(c);$('status').textContent=c.type;$('message').textContent=`กำลังแสดงบรรทัด ${c.line}: ${c.type}`;updateRead();draw();
+}
+function start(){
+  try{commands=parse();}catch(e){$('message').textContent=e.message;$('status').textContent='คำสั่งผิด';return}
+  if(!commands.length){$('message').textContent='ยังไม่มีคำสั่งให้จำลอง';return}
+  if(index>=commands.length)reset();
+  playing=true;$('status').textContent='กำลังจำลอง';last=0;
+}
+function draw(){
+  const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
+  // machine bed
+  ctx.fillStyle='#172733';ctx.fillRect(35,350,930,45);
+  ctx.fillStyle='#344c5b';ctx.fillRect(70,365,860,12);
+  // chuck
+  ctx.fillStyle='#8295a1';ctx.fillRect(120,cy-85,38,170);ctx.fillStyle='#526a78';ctx.fillRect(158,cy-62,32,124);
+  // stock axis and rotating body
+  const left=190, right=left+60*scale, ytop=cy-20*scale, ybot=cy+20*scale;
+  ctx.save();ctx.translate(left,cy);ctx.rotate(Math.sin(rot)*.035);
+  ctx.fillStyle='#9aaab4';ctx.beginPath();ctx.moveTo(0,-20*scale);
+  for(const p of profile)ctx.lineTo((Math.abs(p.z))*scale,-p.r*scale);
+  ctx.lineTo(60*scale,-profile[profile.length-1].r*scale);
+  ctx.lineTo(60*scale,profile[profile.length-1].r*scale);
+  for(const p of [...profile].reverse())ctx.lineTo(Math.abs(p.z)*scale,p.r*scale);
+  ctx.closePath();ctx.fill();ctx.strokeStyle='#d2e0e7';ctx.lineWidth=3;ctx.stroke();
+  // rotational highlight
+  ctx.strokeStyle='#e8f2f6';ctx.globalAlpha=.45;ctx.beginPath();ctx.ellipse(0,0,12,20*scale,0,0,Math.PI*2);ctx.stroke();
+  ctx.restore();
+  // axis
+  ctx.setLineDash([8,7]);ctx.strokeStyle='#6d8b9b';ctx.beginPath();ctx.moveTo(100,cy);ctx.lineTo(920,cy);ctx.stroke();ctx.setLineDash([]);
+  // tool holder and insert, mapped to tool coords
+  const tx=left+Math.max(0,Math.min(60,-z))*scale;
+  const ty=cy-(x/2)*scale;
+  ctx.fillStyle='#596f7c';ctx.fillRect(tx-18,ty+8,100,35);
+  ctx.fillStyle='#e4b65c';ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+22,ty+10);ctx.lineTo(tx+8,ty+20);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='#f0cc7c';ctx.lineWidth=2;ctx.stroke();
+  // labels
+  ctx.fillStyle='#d5e4eb';ctx.font='20px sans-serif';ctx.fillText('หัวจับ',75,115);ctx.fillText('ชิ้นงานจำลอง',420,95);ctx.fillText('มีดกลึง',tx+75,ty+28);
+  ctx.fillStyle='#91a8b5';ctx.font='16px sans-serif';ctx.fillText('แกน Z',850,cy-12);ctx.fillText('แกน X',65,cy-105);
+  // spindle indicator
+  ctx.fillStyle='#a9f28f';ctx.font='bold 18px sans-serif';ctx.fillText('SPINDLE  ↻',770,55);
+  ctx.fillStyle='#a9f28f';ctx.beginPath();ctx.arc(920,48,10,0,Math.PI*2);ctx.fill();
+}
+function frame(t){
+  if(!last)last=t;const dt=Math.min(100,t-last);last=t;
+  if(playing){rot+=dt*.008*speed;acc+=dt*speed/850;if(acc>=1){acc=0;next()}}
+  else rot+=dt*.001;
+  draw();requestAnimationFrame(frame);
+}
+$('run').onclick=start;
+$('pause').onclick=()=>{playing=false;$('status').textContent='หยุดชั่วคราว';$('message').textContent='หยุดชั่วคราวแล้ว กดเริ่มจำลองเพื่อทำต่อ';};
+$('step').onclick=()=>{try{if(!commands.length)commands=parse();playing=false;next()}catch(e){$('message').textContent=e.message}};
+$('reset').onclick=reset;
+$('load').onclick=()=>{$('program').value=`; ตัวอย่างเส้นทางฝึกแบบภาพ\nHOME\nMOVE X=40 Z=0\nCUT X=30 Z=0\nCUT X=30 Z=-25\nCUT X=24 Z=-25\nCUT X=24 Z=-50\nMOVE X=45 Z=-50\nHOME`;commands=[];reset()};
+$('clear').onclick=()=>{$('program').value='';commands=[];reset()};
+$('speed').oninput=e=>{speed=Number(e.target.value);$('speedVal').textContent=speed+'x'};
+try{if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}catch(e){}
+reset();requestAnimationFrame(frame);
