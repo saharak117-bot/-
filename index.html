@@ -1,71 +1,36 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#101820">
-<title>Lathe Visual Simulator — Training Only</title>
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="stylesheet" href="style.css">
-</head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>FANUC Lathe Simulator</title><link rel="manifest" href="manifest.webmanifest">
+<style>
+:root{color-scheme:dark;font-family:system-ui, sans-serif;background:#10151d;color:#e8eef7}
+*{box-sizing:border-box}body{margin:0;padding:14px;max-width:1000px;margin:auto}
+h1{font-size:21px;margin:4px 0}p{color:#aebbd0;font-size:13px}
+.panel{background:#1b2431;border:1px solid #344154;border-radius:12px;padding:12px;margin:10px 0}
+canvas{width:100%;height:270px;background:#0b1017;border-radius:8px;display:block}
+button,select{background:#2475d2;color:white;border:0;border-radius:8px;padding:10px 14px;font-size:14px;margin:4px 3px 4px 0}
+button:disabled{opacity:.45}textarea{width:100%;height:260px;background:#0b1017;color:#b9f5c8;border:1px solid #40516a;border-radius:8px;padding:10px;font:13px/1.5 monospace}
+.row{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.status{font:13px monospace;color:#9bd5ff;white-space:pre-wrap}
+small{color:#aebbd0}.warn{color:#ffd27a}
+</style></head>
 <body>
-<header>
-  <div class="eyebrow">OFFLINE TRAINING • VISUAL ONLY</div>
-  <h1>LATHE VISUAL SIMULATOR</h1>
-  <p>เครื่องกลึงจำลอง 2D • แสดงชิ้นงานหมุนและภาพตัดตามคำสั่งฝึก</p>
-</header>
-<main>
-<section class="panel">
-  <div class="section-title">ภาพจำลองเครื่องกลึง</div>
-  <canvas id="view" width="1000" height="470" aria-label="ภาพจำลองเครื่องกลึง"></canvas>
-  <div class="readouts">
-    <div><small>ตำแหน่ง X</small><strong id="xread">40.0</strong></div>
-    <div><small>ตำแหน่ง Z</small><strong id="zread">0.0</strong></div>
-    <div><small>สถานะ</small><strong id="status">พร้อมฝึก</strong></div>
-    <div><small>คำสั่ง</small><strong id="lineNo">0 / 0</strong></div>
-  </div>
-  <div class="controls">
-    <button id="run" class="primary">▶ เริ่มจำลอง</button>
-    <button id="pause">Ⅱ หยุดชั่วคราว</button>
-    <button id="step">ทีละคำสั่ง</button>
-    <button id="reset">↺ เริ่มใหม่</button>
-  </div>
-  <label class="speed">ความเร็วจำลอง <input id="speed" type="range" min="1" max="10" value="5"><span id="speedVal">5x</span></label>
-</section>
-
-<section class="panel">
-  <div class="section-title">ชุดคำสั่งฝึก (ไม่ใช่ G-code)</div>
-  <p class="note">ใช้ภาษาคำสั่งจำลองเฉพาะเว็บนี้เท่านั้น ไม่รองรับ G-code ของ FANUC และไม่สามารถส่งออกไปควบคุมเครื่องจักรได้</p>
-  <textarea id="program" spellcheck="false">; ตัวอย่างเส้นทางฝึกแบบภาพ
-; รูปแบบ: MOVE X=ค่า Z=ค่า
-; CUT  X=ค่า Z=ค่า
-HOME
-MOVE X=40 Z=0
-CUT X=30 Z=0
-CUT X=30 Z=-25
-CUT X=24 Z=-25
-CUT X=24 Z=-50
-MOVE X=45 Z=-50
-HOME</textarea>
-  <div class="controls">
-    <button id="load">โหลดตัวอย่าง</button>
-    <button id="clear">ล้างคำสั่ง</button>
-  </div>
-  <div id="message" class="message">พร้อมแล้ว กด “เริ่มจำลอง” เพื่อดูการเคลื่อนที่</div>
-</section>
-
-<section class="panel">
-  <div class="section-title">คำสั่งที่ใช้ได้</div>
-  <div class="command-grid">
-    <div><code>HOME</code><span>กลับตำแหน่งเริ่มต้น</span></div>
-    <div><code>MOVE X=40 Z=0</code><span>เคลื่อนที่โดยไม่ตัด</span></div>
-    <div><code>CUT X=30 Z=-20</code><span>แสดงการตัดในภาพจำลอง</span></div>
-    <div><code>; ข้อความ</code><span>บรรทัดหมายเหตุ</span></div>
-  </div>
-  <p class="note">ค่าตัวเลขเป็นหน่วยสมมติสำหรับฝึกดูภาพเท่านั้น ระบบนี้เป็นภาพประกอบเพื่อการเรียนรู้ ไม่ใช่เครื่องจำลองทางวิศวกรรมและไม่รับประกันรูปทรงหรือระยะจริง</p>
-</section>
-</main>
-<footer>Training demo only • ไม่เชื่อมต่อ CNC Controller หรือเครื่องจักรจริง</footer>
+<h1>FANUC Lathe Simulator — Mobile</h1>
+<p>ตัวอย่างจำลองงานกลึง 2D แบบภาพเคลื่อนไหว อ่าน G-code ตัวอย่าง: ปาดหน้า, กลึงเรียว และเจาะรู</p>
+<div class="panel">
+<canvas id="view" width="900" height="360"></canvas>
+<div class="row">
+<button id="run">▶ Run</button><button id="step">ทีละบรรทัด</button><button id="pause">พัก</button><button id="reset">Reset</button>
+<label>ความเร็ว <select id="speed"><option value="1">ช้า</option><option value="2" selected>ปกติ</option><option value="4">เร็ว</option></select></label>
+</div>
+<div class="status" id="status">พร้อมจำลอง | RPM: 0</div>
+</div>
+<div class="panel">
+<div class="row"><button id="load">โหลดตัวอย่าง FANUC</button><button id="clear">ล้างโค้ด</button></div>
+<textarea id="code" spellcheck="false"></textarea>
+<p class="warn">รองรับชุดคำสั่งฝึกพื้นฐาน G00, G01, G02/G03 (แสดงเส้นทางอย่างง่าย), G21, G18, G40, G90, G97, G98/G99, M03/M04/M05, T และ F/S</p>
+</div>
+<div class="panel"><b>สิ่งที่แสดง</b><p>แท่งวัสดุหมุนด้วยภาพเคลื่อนไหว • มีดเคลื่อนตาม X/Z • แนวปาดหน้าและผิวเรียว • แนวเจาะจากปลายชิ้นงาน</p>
+<p class="warn">เป็นซอฟต์แวร์ฝึกบนหน้าจอ ไม่ใช่เครื่องจำลองฟิสิกส์หรือระบบตรวจชนจริง และไม่ใช้ส่งโปรแกรมไปเครื่อง CNC</p></div>
 <script src="app.js"></script>
-</body>
-</html>
+</body></html>

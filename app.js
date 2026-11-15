@@ -1,97 +1,95 @@
-const canvas=document.getElementById('view'),ctx=canvas.getContext('2d');
-const $=id=>document.getElementById(id);
-let commands=[],index=0,playing=false,last=0,acc=0,x=40,z=0,tool={x:40,z:0},speed=5;
-let profile=[{z:0,r:20},{z:-60,r:20}],rot=0;
-const scale=6.1, cx=500, cy=230;
-function parse(){
-  const lines=$('program').value.split(/\r?\n/); const out=[];
-  for(let n=0;n<lines.length;n++){
-    let s=lines[n].trim().toUpperCase(); if(!s||s.startsWith(';'))continue;
-    if(s==='HOME'){out.push({type:'HOME',line:n+1});continue}
-    let m=s.match(/^(MOVE|CUT)\s+X\s*=\s*(-?\d+(?:\.\d+)?)\s+Z\s*=\s*(-?\d+(?:\.\d+)?)$/);
-    if(!m)throw new Error(`บรรทัด ${n+1}: รูปแบบไม่ถูกต้อง — ใช้ MOVE/CUT X=ตัวเลข Z=ตัวเลข`);
-    let X=Number(m[2]),Z=Number(m[3]);
-    if(!Number.isFinite(X)||!Number.isFinite(Z)||X<0||X>80||Z>10||Z< -100)throw new Error(`บรรทัด ${n+1}: ค่าต้องอยู่ในช่วง X 0–80 และ Z -100 ถึง 10`);
-    out.push({type:m[1],x:X,z:Z,line:n+1});
-  }
-  return out;
+const cv=document.getElementById('view'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
+const sample=`%
+O0100 (FANUC LATHE TRAINING)
+G21 G18 G40 G99
+G97 S500 M03
+T0101
+( FACING )
+G00 X22.0 Z2.0
+G01 Z0.0 F0.15
+G01 X0.0
+G00 X22.0 Z2.0
+( TAPER TURNING DIA 20 TO DIA 10 LENGTH 30 )
+G00 X22.0 Z1.0
+G01 X20.0 Z0.0 F0.12
+G01 X10.0 Z-30.0
+G00 X22.0
+G00 Z3.0
+M05
+( DRILLING EXAMPLE - CENTER DRILL PATH )
+T0202
+G97 S700 M03
+G00 X0.0 Z2.0
+G01 Z-18.0 F0.08
+G00 Z2.0
+M05
+M30
+%`;
+$('code').value=sample;
+let state={x:24,z:5,spindle:false,rpm:0,tool:0,mode:'G00',path:[],idx:0,lines:[],running:false,angle:0,stock:20,profile:[],target:null,last:null};
+function parse(){return $('code').value.split(/\r?\n/).map(s=>s.replace(/\(.*?\)/g,'').trim()).filter(s=>s&&!s.startsWith('%')&&!/^O\d+/.test(s));}
+function words(line){let o={};for(const m of line.matchAll(/([A-Z])\s*(-?\d+(?:\.\d+)?)/gi))o[m[1].toUpperCase()]=Number(m[2]);return o;}
+function load(){state.lines=parse();state.idx=0;state.x=24;state.z=5;state.path=[];state.profile=[];state.spindle=false;state.rpm=0;state.running=false;state.target=null;draw();report('โหลดโปรแกรมแล้ว');}
+function report(extra=''){ $('status').textContent=`บรรทัด ${state.idx}/${state.lines.length} | X ${state.x.toFixed(2)}  Z ${state.z.toFixed(2)} | RPM: ${state.spindle?state.rpm:0} | ${extra}`;}
+function execute(){
+ if(state.idx>=state.lines.length){state.running=false;report('จบโปรแกรม');return false;}
+ let line=state.lines[state.idx++],w=words(line);
+ if(w.G!==undefined){if([0,1,2,3].includes(w.G))state.mode='G0'+w.G;}
+ if(w.M===3||w.M===4)state.spindle=true;if(w.M===5)state.spindle=false;
+ if(w.S)state.rpm=w.S;
+ if(w.T)state.tool=w.T;
+ let nx=w.X!==undefined?w.X:state.x,nz=w.Z!==undefined?w.Z:state.z;
+ if(w.X!==undefined||w.Z!==undefined){
+   let from={x:state.x,z:state.z},to={x:nx,z:nz};
+   state.target={from,to,mode:state.mode,progress:0,feed:w.F||0.12};
+ }
+ report(line);return true;
 }
-function reset(){
-  playing=false;index=0;x=40;z=0;tool={x:40,z:0};profile=[{z:0,r:20},{z:-60,r:20}];rot=0;
-  $('status').textContent='พร้อมฝึก';$('message').textContent='รีเซ็ตแล้ว พร้อมเริ่มใหม่';updateRead();draw();
-}
-function updateRead(){$('xread').textContent=x.toFixed(1);$('zread').textContent=z.toFixed(1);$('lineNo').textContent=`${index} / ${commands.length}`;}
-function interpolateCut(nx,nz){
-  // Visual-only stock silhouette: reduce the radius over the traversed Z interval.
-  const r=Math.max(2,Math.min(20,nx/2));
-  const lo=Math.min(z,nz),hi=Math.max(z,nz);
-  let next=[];
-  for(const p of profile){if(p.z<lo||p.z>hi)next.push(p)}
-  next.push({z:lo,r},{z:hi,r}); next.sort((a,b)=>b.z-a.z);
-  const compact=[];for(const p of next){if(!compact.length||Math.abs(compact[compact.length-1].z-p.z)>.01)compact.push(p);else compact[compact.length-1].r=Math.min(compact[compact.length-1].r,p.r)}
-  profile=compact;
-}
-function execute(c){
-  if(c.type==='HOME'){x=40;z=0;tool={x,z};return}
-  if(c.type==='CUT')interpolateCut(c.x,c.z);
-  x=c.x;z=c.z;tool={x,z};
-}
-function next(){
-  if(index>=commands.length){playing=false;$('status').textContent='จบโปรแกรม';$('message').textContent='จำลองครบทุกคำสั่งแล้ว';return}
-  const c=commands[index++];execute(c);$('status').textContent=c.type;$('message').textContent=`กำลังแสดงบรรทัด ${c.line}: ${c.type}`;updateRead();draw();
-}
-function start(){
-  try{commands=parse();}catch(e){$('message').textContent=e.message;$('status').textContent='คำสั่งผิด';return}
-  if(!commands.length){$('message').textContent='ยังไม่มีคำสั่งให้จำลอง';return}
-  if(index>=commands.length)reset();
-  playing=true;$('status').textContent='กำลังจำลอง';last=0;
+function tick(){
+ if(state.target){let t=state.target,dx=t.to.x-t.from.x,dz=t.to.z-t.from.z,dist=Math.hypot(dx,dz),speed=(t.mode==='G00'?0.9:0.18)*Number($('speed').value);
+ t.progress=Math.min(1,t.progress+(dist?speed/dist:1));
+ let p=t.progress;state.x=t.from.x+dx*p;state.z=t.from.z+dz*p;
+ if(t.mode!=='G00')state.path.push({x:state.x,z:state.z});
+ if(p>=1){if(t.mode!=='G00')state.profile.push({x:t.to.x,z:t.to.z});state.target=null;}
+ } else if(state.running){if(!execute())return;}
+ if(state.spindle)state.angle+=0.18*Number($('speed').value);
+ draw();
 }
 function draw(){
-  const w=canvas.width,h=canvas.height;ctx.clearRect(0,0,w,h);
-  // machine bed
-  ctx.fillStyle='#172733';ctx.fillRect(35,350,930,45);
-  ctx.fillStyle='#344c5b';ctx.fillRect(70,365,860,12);
-  // chuck
-  ctx.fillStyle='#8295a1';ctx.fillRect(120,cy-85,38,170);ctx.fillStyle='#526a78';ctx.fillRect(158,cy-62,32,124);
-  // stock axis and rotating body
-  const left=190, right=left+60*scale, ytop=cy-20*scale, ybot=cy+20*scale;
-  ctx.save();ctx.translate(left,cy);ctx.rotate(Math.sin(rot)*.035);
-  ctx.fillStyle='#9aaab4';ctx.beginPath();ctx.moveTo(0,-20*scale);
-  for(const p of profile)ctx.lineTo((Math.abs(p.z))*scale,-p.r*scale);
-  ctx.lineTo(60*scale,-profile[profile.length-1].r*scale);
-  ctx.lineTo(60*scale,profile[profile.length-1].r*scale);
-  for(const p of [...profile].reverse())ctx.lineTo(Math.abs(p.z)*scale,p.r*scale);
-  ctx.closePath();ctx.fill();ctx.strokeStyle='#d2e0e7';ctx.lineWidth=3;ctx.stroke();
-  // rotational highlight
-  ctx.strokeStyle='#e8f2f6';ctx.globalAlpha=.45;ctx.beginPath();ctx.ellipse(0,0,12,20*scale,0,0,Math.PI*2);ctx.stroke();
-  ctx.restore();
-  // axis
-  ctx.setLineDash([8,7]);ctx.strokeStyle='#6d8b9b';ctx.beginPath();ctx.moveTo(100,cy);ctx.lineTo(920,cy);ctx.stroke();ctx.setLineDash([]);
-  // tool holder and insert, mapped to tool coords
-  const tx=left+Math.max(0,Math.min(60,-z))*scale;
-  const ty=cy-(x/2)*scale;
-  ctx.fillStyle='#596f7c';ctx.fillRect(tx-18,ty+8,100,35);
-  ctx.fillStyle='#e4b65c';ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+22,ty+10);ctx.lineTo(tx+8,ty+20);ctx.closePath();ctx.fill();
-  ctx.strokeStyle='#f0cc7c';ctx.lineWidth=2;ctx.stroke();
-  // labels
-  ctx.fillStyle='#d5e4eb';ctx.font='20px sans-serif';ctx.fillText('หัวจับ',75,115);ctx.fillText('ชิ้นงานจำลอง',420,95);ctx.fillText('มีดกลึง',tx+75,ty+28);
-  ctx.fillStyle='#91a8b5';ctx.font='16px sans-serif';ctx.fillText('แกน Z',850,cy-12);ctx.fillText('แกน X',65,cy-105);
-  // spindle indicator
-  ctx.fillStyle='#a9f28f';ctx.font='bold 18px sans-serif';ctx.fillText('SPINDLE  ↻',770,55);
-  ctx.fillStyle='#a9f28f';ctx.beginPath();ctx.arc(920,48,10,0,Math.PI*2);ctx.fill();
+ const W=cv.width,H=cv.height;ctx.clearRect(0,0,W,H);
+ // work area and axis
+ ctx.fillStyle='#0b1017';ctx.fillRect(0,0,W,H);
+ const ox=130,oy=180,scale=17;
+ ctx.strokeStyle='#263448';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(60,oy);ctx.lineTo(850,oy);ctx.stroke();
+ ctx.fillStyle='#90a6c4';ctx.font='14px sans-serif';ctx.fillText('Z0 / หน้าชิ้นงาน',ox-45,30);ctx.fillText('Z−',780,oy-10);ctx.fillText('แกน X (เส้นผ่านศูนย์กลาง)',10,340);
+ // chuck
+ ctx.fillStyle='#58677b';ctx.fillRect(55,oy-80,65,160);ctx.fillStyle='#9ba8b8';ctx.fillRect(100,oy-54,32,108);
+ // stock cylinder rendered as rotating striped cylinder
+ let radius=state.stock*scale/2, len=30*scale;
+ ctx.fillStyle='#64788e';ctx.fillRect(ox,oy-radius,len,radius*2);
+ ctx.save();ctx.beginPath();ctx.rect(ox,oy-radius,len,radius*2);ctx.clip();
+ ctx.translate(ox+len/2,oy);ctx.rotate(state.angle);
+ for(let i=-len;i<len*2;i+=26){ctx.strokeStyle=(i%52===0)?'#b8c8d8':'#344b62';ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(i,-radius*2);ctx.lineTo(i+90,radius*2);ctx.stroke();}
+ ctx.restore();
+ // profile overlay
+ if(state.profile.length>1){ctx.strokeStyle='#ffb84a';ctx.lineWidth=4;ctx.beginPath();state.profile.forEach((p,i)=>{let x=ox+(-p.z)*scale,y=oy-p.x/2*scale;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();}
+ // hole graphic
+ ctx.fillStyle='#0b1017';ctx.fillRect(ox,oy-4,Math.min(18*scale,290),8);
+ ctx.strokeStyle='#5ed0ee';ctx.lineWidth=2;ctx.strokeRect(ox,oy-4,Math.min(18*scale,290),8);
+ // tool and holder
+ let tx=ox+(-state.z)*scale,ty=oy-state.x/2*scale;
+ ctx.fillStyle='#e7a83d';ctx.fillRect(tx-10,ty+12,95,18);ctx.fillStyle='#f3d18b';ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx+20,ty+12);ctx.lineTo(tx-10,ty+12);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#dce7f4';ctx.font='13px monospace';ctx.fillText(`X${state.x.toFixed(1)} Z${state.z.toFixed(1)}`,tx+18,ty-12);
+ ctx.fillStyle=state.spindle?'#5ce0a0':'#9aa7b8';ctx.fillText(state.spindle?'● SPINDLE ON':'○ SPINDLE STOP',650,32);
+ ctx.fillStyle='#aebbd0';ctx.fillText('ชิ้นงานหมุน (ภาพจำลอง)',300,oy+radius+28);
 }
-function frame(t){
-  if(!last)last=t;const dt=Math.min(100,t-last);last=t;
-  if(playing){rot+=dt*.008*speed;acc+=dt*speed/850;if(acc>=1){acc=0;next()}}
-  else rot+=dt*.001;
-  draw();requestAnimationFrame(frame);
-}
+let timer=null;
+function start(){if(!state.lines.length)load();state.running=true;if(!timer)timer=setInterval(()=>{if(state.running)tick();},35);report('กำลัง Run');}
 $('run').onclick=start;
-$('pause').onclick=()=>{playing=false;$('status').textContent='หยุดชั่วคราว';$('message').textContent='หยุดชั่วคราวแล้ว กดเริ่มจำลองเพื่อทำต่อ';};
-$('step').onclick=()=>{try{if(!commands.length)commands=parse();playing=false;next()}catch(e){$('message').textContent=e.message}};
-$('reset').onclick=reset;
-$('load').onclick=()=>{$('program').value=`; ตัวอย่างเส้นทางฝึกแบบภาพ\nHOME\nMOVE X=40 Z=0\nCUT X=30 Z=0\nCUT X=30 Z=-25\nCUT X=24 Z=-25\nCUT X=24 Z=-50\nMOVE X=45 Z=-50\nHOME`;commands=[];reset()};
-$('clear').onclick=()=>{$('program').value='';commands=[];reset()};
-$('speed').oninput=e=>{speed=Number(e.target.value);$('speedVal').textContent=speed+'x'};
-try{if('serviceWorker'in navigator)window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}catch(e){}
-reset();requestAnimationFrame(frame);
+$('step').onclick=()=>{state.running=false;if(!state.lines.length)load();if(!state.target)execute();tick();};
+$('pause').onclick=()=>{state.running=false;report('พัก');};
+$('reset').onclick=()=>{state.running=false;load();};
+$('load').onclick=load;
+$('clear').onclick=()=>{$('code').value='';load();};
+$('speed').onchange=()=>draw();
+load();draw();setInterval(()=>{if(state.spindle){state.angle+=0.04;draw();}},60);
