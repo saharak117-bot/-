@@ -1,36 +1,107 @@
 <!doctype html>
 <html lang="th">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
-<title>FANUC Lathe Simulator</title><link rel="manifest" href="manifest.webmanifest">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Truck Haul Simulator</title>
 <style>
-:root{color-scheme:dark;font-family:system-ui, sans-serif;background:#10151d;color:#e8eef7}
-*{box-sizing:border-box}body{margin:0;padding:14px;max-width:1000px;margin:auto}
-h1{font-size:21px;margin:4px 0}p{color:#aebbd0;font-size:13px}
-.panel{background:#1b2431;border:1px solid #344154;border-radius:12px;padding:12px;margin:10px 0}
-canvas{width:100%;height:270px;background:#0b1017;border-radius:8px;display:block}
-button,select{background:#2475d2;color:white;border:0;border-radius:8px;padding:10px 14px;font-size:14px;margin:4px 3px 4px 0}
-button:disabled{opacity:.45}textarea{width:100%;height:260px;background:#0b1017;color:#b9f5c8;border:1px solid #40516a;border-radius:8px;padding:10px;font:13px/1.5 monospace}
-.row{display:flex;flex-wrap:wrap;align-items:center;gap:5px}.status{font:13px monospace;color:#9bd5ff;white-space:pre-wrap}
-small{color:#aebbd0}.warn{color:#ffd27a}
-</style></head>
+*{box-sizing:border-box}body{margin:0;background:#101820;color:#fff;font-family:system-ui, sans-serif;overflow:hidden;touch-action:none}
+canvas{display:block;width:100vw;height:100vh;background:#7eb3d1}
+#hud{position:fixed;top:8px;left:8px;right:8px;display:flex;gap:7px;flex-wrap:wrap;pointer-events:none}
+.pill{background:#07131dcc;border:1px solid #ffffff44;border-radius:9px;padding:6px 9px;font-size:13px}
+#menu{position:fixed;inset:0;background:#07131deF;display:flex;align-items:center;justify-content:center;padding:18px}
+.panel{width:min(440px,100%);background:#182b3a;border:1px solid #ffffff33;border-radius:18px;padding:20px}
+h1{font-size:23px;margin:0 0 6px}p{color:#c8d5df;font-size:14px;line-height:1.5}
+select,button{font:inherit;border:0;border-radius:10px;padding:12px;background:#e7eef4;color:#14212b}
+select{width:100%;margin:6px 0 12px}.primary{width:100%;background:#ffb12b;font-weight:800;margin-top:8px}
+#controls{position:fixed;bottom:12px;left:0;right:0;display:flex;justify-content:space-between;align-items:end;padding:0 12px;pointer-events:none}
+.cluster{display:flex;gap:8px;align-items:end;pointer-events:auto}.btn{width:62px;height:62px;border-radius:50%;background:#102334d9;color:white;border:2px solid #ffffff77;font-weight:700;touch-action:none}
+.btn.long{width:72px;height:72px}.btn.active{background:#e18a18}
+#gearbox{display:flex;flex-direction:column;gap:5px;pointer-events:auto}
+.small{width:54px;height:34px;border-radius:8px;background:#102334e8;color:white;border:1px solid #ffffff66;padding:0}
+#help{position:fixed;bottom:100px;left:10px;background:#07131dcc;padding:7px 10px;border-radius:8px;font-size:12px;color:#e8f0f5}
+#msg{position:fixed;top:58px;left:50%;transform:translateX(-50%);background:#07131ddd;padding:8px 12px;border-radius:9px;font-size:13px;display:none}
+@media(min-width:800px){.btn{width:72px;height:72px}.btn.long{width:86px;height:86px}}
+</style>
+</head>
 <body>
-<h1>FANUC Lathe Simulator — Mobile</h1>
-<p>ตัวอย่างจำลองงานกลึง 2D แบบภาพเคลื่อนไหว อ่าน G-code ตัวอย่าง: ปาดหน้า, กลึงเรียว และเจาะรู</p>
-<div class="panel">
-<canvas id="view" width="900" height="360"></canvas>
-<div class="row">
-<button id="run">▶ Run</button><button id="step">ทีละบรรทัด</button><button id="pause">พัก</button><button id="reset">Reset</button>
-<label>ความเร็ว <select id="speed"><option value="1">ช้า</option><option value="2" selected>ปกติ</option><option value="4">เร็ว</option></select></label>
+<canvas id="game"></canvas>
+<div id="hud">
+ <div class="pill" id="speed">0 km/h</div><div class="pill" id="gear">เกียร์ N</div>
+ <div class="pill" id="rpm">รอบ 700</div><div class="pill" id="truckname">หัวลาก 18 ล้อ</div>
+ <div class="pill" id="cam">มุมมอง: ภายนอก</div>
 </div>
-<div class="status" id="status">พร้อมจำลอง | RPM: 0</div>
+<div id="msg"></div>
+<div id="help">แตะคันเร่งเพื่อวิ่ง • เบรกเพื่อลดความเร็ว • เลี้ยวด้วยปุ่มซ้าย/ขวา</div>
+<div id="controls">
+ <div class="cluster">
+  <button class="btn" id="left">◀</button><button class="btn" id="right">▶</button>
+  <button class="btn" id="camBtn">มุมกล้อง</button>
+ </div>
+ <div class="cluster">
+  <div id="gearbox"><button class="small" id="rev">R ถอย</button><button class="small" id="neutral">N ว่าง</button><button class="small" id="drive">D เดินหน้า</button></div>
+  <button class="btn" id="brake">เบรก</button><button class="btn long" id="gas">คันเร่ง</button>
+ </div>
 </div>
-<div class="panel">
-<div class="row"><button id="load">โหลดตัวอย่าง FANUC</button><button id="clear">ล้างโค้ด</button></div>
-<textarea id="code" spellcheck="false"></textarea>
-<p class="warn">รองรับชุดคำสั่งฝึกพื้นฐาน G00, G01, G02/G03 (แสดงเส้นทางอย่างง่าย), G21, G18, G40, G90, G97, G98/G99, M03/M04/M05, T และ F/S</p>
-</div>
-<div class="panel"><b>สิ่งที่แสดง</b><p>แท่งวัสดุหมุนด้วยภาพเคลื่อนไหว • มีดเคลื่อนตาม X/Z • แนวปาดหน้าและผิวเรียว • แนวเจาะจากปลายชิ้นงาน</p>
-<p class="warn">เป็นซอฟต์แวร์ฝึกบนหน้าจอ ไม่ใช่เครื่องจำลองฟิสิกส์หรือระบบตรวจชนจริง และไม่ใช้ส่งโปรแกรมไปเครื่อง CNC</p></div>
-<script src="app.js"></script>
+<div id="menu"><div class="panel">
+ <h1>🚛 Truck Haul Simulator</h1>
+ <p>เกมทดลองขับรถหัวลากบนมือถือ มีมุมมองห้องคนขับ/ภายนอก ระบบเกียร์ เดินหน้า-ถอยหลัง และหางพ่วงแบบจำลอง</p>
+ <label>เลือกรถ</label><select id="truckSelect"><option value="18">หัวลาก 18 ล้อ + หางกึ่งพ่วง</option><option value="10">หัวลาก 10 ล้อ + หางพ่วง</option></select>
+ <label>มุมมองเริ่มต้น</label><select id="viewSelect"><option value="outside">ภายนอก</option><option value="cab">ห้องคนขับ</option></select>
+ <button class="primary" id="start">เริ่มขับรถ</button>
+ <p style="font-size:12px">ต้นแบบเกมเว็บ: ใช้ระบบจำลองการขับ ไม่ใช่แบบจำลองรถจริงระดับฝึกใบขับขี่</p>
+ </div></div>
+<script>
+(()=>{
+const canvas=document.getElementById('game'),ctx=canvas.getContext('2d');
+let W=0,H=0,dpr=1,started=false,truck='18',camera='outside',gear='N',speed=0,rpm=700,steer=0,roadX=0,dist=0,trailerAngle=0;
+let keys={left:false,right:false,gas:false,brake:false};
+function resize(){dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;canvas.width=W*dpr;canvas.height=H*dpr;ctx.setTransform(dpr,0,0,dpr,0,0)}
+addEventListener('resize',resize);resize();
+function bindHold(id,key){let e=document.getElementById(id);const on=v=>{keys[key]=v;e.classList.toggle('active',v)};e.addEventListener('pointerdown',ev=>{ev.preventDefault();on(true)});['pointerup','pointercancel','pointerleave'].forEach(t=>e.addEventListener(t,()=>on(false)))}
+bindHold('left','left');bindHold('right','right');bindHold('gas','gas');bindHold('brake','brake');
+document.getElementById('rev').onclick=()=>setGear('R');document.getElementById('neutral').onclick=()=>setGear('N');document.getElementById('drive').onclick=()=>setGear('D');
+function setGear(g){gear=g;document.getElementById('gear').textContent='เกียร์ '+g}
+document.getElementById('camBtn').onclick=()=>{camera=camera==='outside'?'cab':'outside';document.getElementById('cam').textContent='มุมมอง: '+(camera==='cab'?'ห้องคนขับ':'ภายนอก')};
+document.getElementById('start').onclick=()=>{truck=document.getElementById('truckSelect').value;camera=document.getElementById('viewSelect').value;started=true;document.getElementById('menu').style.display='none';document.getElementById('truckname').textContent=truck==='18'?'หัวลาก 18 ล้อ':'หัวลาก 10 ล้อ';document.getElementById('cam').textContent='มุมมอง: '+(camera==='cab'?'ห้องคนขับ':'ภายนอก')};
+function road(){let horizon=H*.34,center=W/2+roadX;ctx.fillStyle='#79b4d3';ctx.fillRect(0,0,W,horizon);ctx.fillStyle='#477c42';ctx.fillRect(0,horizon,W,H-horizon);
+let roadW=Math.min(W*.92,700);ctx.fillStyle='#45494d';ctx.beginPath();ctx.moveTo(center-roadW*.12,horizon);ctx.lineTo(center+roadW*.12,horizon);ctx.lineTo(center+roadW*.55,H);ctx.lineTo(center-roadW*.55,H);ctx.closePath();ctx.fill();
+ctx.strokeStyle='#f4e8b2';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(center-roadW*.12,horizon);ctx.lineTo(center-roadW*.55,H);ctx.moveTo(center+roadW*.12,horizon);ctx.lineTo(center+roadW*.55,H);ctx.stroke();
+ctx.strokeStyle='#eee';ctx.lineWidth=4;for(let i=0;i<12;i++){let y=horizon+((i*70+dist*5)%(H-horizon));let t=(y-horizon)/(H-horizon);let x=center;let ww=2+t*4;ctx.fillStyle='#f8f1cf';ctx.fillRect(x-ww/2,y,ww,10+t*18)}
+// roadside trees
+for(let i=0;i<9;i++){let y=horizon+((i*115+dist*3)%(H-horizon));let t=(y-horizon)/(H-horizon);let x=center+(i%2?1:-1)*(roadW*.18+t*W*.22);ctx.fillStyle='#69452c';ctx.fillRect(x-3*t,y-24*t,6*t,26*t);ctx.fillStyle='#28683b';ctx.beginPath();ctx.arc(x,y-28*t,17*t+2,0,Math.PI*2);ctx.fill()}
+}
+function truckDraw(){let x=W/2+roadX*.72,y=H*.73,scale=Math.min(W/390,1.25);ctx.save();ctx.translate(x,y);ctx.rotate(steer*.07);
+if(camera==='outside'){
+let cabW=truck==='18'?82:75,cabH=truck==='18'?83:76;
+ // trailer behind cab
+ctx.save();ctx.translate(0,-105*scale);ctx.rotate(trailerAngle*.45);
+ctx.fillStyle='#d5d9dd';ctx.fillRect(-cabW*.48*scale,-85*scale,cabW*.96*scale,105*scale);ctx.strokeStyle='#59636a';ctx.lineWidth=2;ctx.strokeRect(-cabW*.48*scale,-85*scale,cabW*.96*scale,105*scale);
+ctx.fillStyle='#20252a';for(let yy=-62;yy<10;yy+=34){ctx.fillRect(-cabW*.58*scale,yy*scale,8*scale,19*scale);ctx.fillRect(cabW*.50*scale,yy*scale,8*scale,19*scale)}ctx.restore();
+ctx.fillStyle='#17232d';ctx.fillRect(-cabW*.55*scale,-12*scale,cabW*1.1*scale,45*scale);
+ctx.fillStyle='#d84a32';ctx.fillRect(-cabW*.48*scale,-60*scale,cabW*.96*scale,58*scale);
+ctx.fillStyle='#9ed5e8';ctx.fillRect(-cabW*.37*scale,-54*scale,cabW*.74*scale,22*scale);
+ctx.fillStyle='#f8e7a1';ctx.fillRect(-cabW*.48*scale,-8*scale,12*scale,9*scale);ctx.fillRect(cabW*.33*scale,-8*scale,12*scale,9*scale);
+ctx.fillStyle='#111';for(let yy=-5;yy<32;yy+=28){ctx.fillRect(-cabW*.62*scale,yy*scale,10*scale,18*scale);ctx.fillRect(cabW*.49*scale,yy*scale,10*scale,18*scale)}
+ctx.fillStyle='#252a2f';ctx.fillRect(-cabW*.45*scale,33*scale,cabW*.9*scale,7*scale);
+}else{
+ // cockpit dashboard and windshield
+ctx.fillStyle='#17232d';ctx.fillRect(-W*.52,-H*.24,W*1.04,H*.55);
+ctx.fillStyle='#8fc3dc';ctx.beginPath();ctx.moveTo(-W*.45,-H*.28);ctx.lineTo(W*.45,-H*.28);ctx.lineTo(W*.35,-H*.02);ctx.lineTo(-W*.35,-H*.02);ctx.closePath();ctx.fill();
+ctx.fillStyle='#222b32';ctx.fillRect(-W*.5,-H*.04,W,H*.16);
+ctx.fillStyle='#111';ctx.beginPath();ctx.arc(0,H*.10,Math.min(W,H)*.14,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#777';ctx.lineWidth=8;ctx.stroke();
+ctx.fillStyle='#ddd';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('RPM     KM/H',0,H*.06);
+ctx.fillStyle='#101820';ctx.fillRect(-W*.5,H*.20,W,H*.25);
+}
+ctx.restore()}
+function update(dt){let accel=keys.gas?(gear==='D'?1:gear==='R'?-0.65:0):0;if(keys.brake){speed*=Math.pow(.08,dt);if(Math.abs(speed)<.4)speed=0}else if(accel!==0){speed+=accel*dt*15}else{speed*=Math.pow(.55,dt);if(Math.abs(speed)<.2)speed=0}
+speed=Math.max(-22,Math.min(95,speed));let steerInput=(keys.left?-1:0)+(keys.right?1:0);steer+=(steerInput-steer)*Math.min(1,dt*5);
+let dir=speed>=0?1:-1;roadX-=steer*speed*dt*1.4;roadX=Math.max(-W*.22,Math.min(W*.22,roadX));dist+=Math.abs(speed)*dt*.015;
+trailerAngle+=(steer*speed*.0009-trailerAngle*.25)*dt*8;
+rpm=Math.round(700+Math.abs(speed)*38+(keys.gas?500:0));}
+function draw(){ctx.clearRect(0,0,W,H);road();if(camera==='outside')truckDraw();else truckDraw();document.getElementById('speed').textContent=Math.round(Math.abs(speed))+' km/h';document.getElementById('rpm').textContent='รอบ '+rpm;}
+let last=0;function loop(t){let dt=Math.min((t-last)/1000||0,.04);last=t;if(started)update(dt);draw();requestAnimationFrame(loop)}requestAnimationFrame(loop);
+addEventListener('keydown',e=>{if(e.key==='ArrowLeft')keys.left=true;if(e.key==='ArrowRight')keys.right=true;if(e.key==='ArrowUp')keys.gas=true;if(e.key==='ArrowDown'||e.key===' ')keys.brake=true;if(e.key.toLowerCase()==='r')setGear('R');if(e.key.toLowerCase()==='d')setGear('D');if(e.key.toLowerCase()==='n')setGear('N')});
+addEventListener('keyup',e=>{if(e.key==='ArrowLeft')keys.left=false;if(e.key==='ArrowRight')keys.right=false;if(e.key==='ArrowUp')keys.gas=false;if(e.key==='ArrowDown'||e.key===' ')keys.brake=false});
+})();
+</script>
 </body></html>
